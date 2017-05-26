@@ -1,8 +1,5 @@
 
-
-use sdl2::{self, Sdl};
-use sdl2::surface;
-use sdl2::pixels;
+use glutin;
 use image::{self, GenericImage};
 
 use std::fmt;
@@ -29,10 +26,9 @@ use GameResult;
 /// to access the `Context`.
 pub struct Context {
     pub conf: conf::Conf,
-    pub sdl_context: Sdl,
     pub filesystem: Filesystem,
     pub gfx_context: graphics::GraphicsContext,
-    pub event_context: sdl2::EventSubsystem,
+    pub event_context: glutin::EventsLoop,
     pub timer_context: timer::TimeContext,
     pub audio_context: audio::AudioContext,
 
@@ -50,40 +46,19 @@ impl fmt::Debug for Context {
 /// An empty string in the conf's `window_icon`
 /// means to do nothing.
 fn set_window_icon(context: &mut Context) -> GameResult<()> {
-    if !context.conf.window_icon.is_empty() {
-        let icon_path = &context.conf.window_icon;
-        let mut f = context.filesystem.open(icon_path)?;
-        let mut buf = Vec::new();
-        f.read_to_end(&mut buf)?;
-        let image = image::load_from_memory(&buf)?;
-        let image_data = &mut image.to_rgba();
-        // The "pitch" parameter here is not the count
-        // between pixels, but the count between rows.
-        // For some retarded reason.
-        // Also SDL seems to have strange ideas of what
-        // "RGBA" means.
-        let surface = surface::Surface::from_data(image_data,
-                                                  image.width(),
-                                                  image.height(),
-                                                  image.width() * 4,
-                                                  pixels::PixelFormatEnum::ABGR8888)?;
-        let window = context.gfx_context.get_window();
-        window.set_icon(surface);
-    };
-    Ok(())
+    Err(GameError::UnknownError("Current implementation does not allow setting a window icon".to_string()))
 }
 
 impl Context {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by `Context::load_from_conf()`.
-    fn from_conf(conf: conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context> {
-        let video = sdl_context.video()?;
+    fn from_conf(conf: conf::Conf, fs: Filesystem) -> GameResult<Context> {
 
         let audio_context = audio::AudioContext::new()?;
-        let event_context = sdl_context.event()?;
+        let event_context = glutin::EventsLoop::new();
         let timer_context = timer::TimeContext::new();
         let font = graphics::Font::default_font()?;
-        let graphics_context = graphics::GraphicsContext::new(video,
+        let graphics_context = graphics::GraphicsContext::new(&event_context,
                                                               &conf.window_title,
                                                               conf.window_width,
                                                               conf.window_height,
@@ -91,7 +66,6 @@ impl Context {
 
         let mut ctx = Context {
             conf: conf,
-            sdl_context: sdl_context,
             filesystem: fs,
             gfx_context: graphics_context,
             event_context: event_context,
@@ -101,7 +75,7 @@ impl Context {
             default_font: font,
         };
 
-        set_window_icon(&mut ctx)?;
+        // set_window_icon(&mut ctx)?;
 
         Ok(ctx)
     }
@@ -119,12 +93,11 @@ impl Context {
                           default_config: conf::Conf)
                           -> GameResult<Context> {
 
-        let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(id, author)?;
 
         let config = fs.read_config().unwrap_or(default_config);
 
-        Context::from_conf(config, fs, sdl_context)
+        Context::from_conf(config, fs)
     }
 
     /// Prints out information on the resources subsystem.
@@ -135,13 +108,7 @@ impl Context {
     }
 
     /// Triggers a Quit event.
-    pub fn quit(&mut self) -> GameResult<()> {
-        let now_dur = timer::get_time_since_start(self);
-        let now = timer::duration_to_f64(now_dur);
-        let e = sdl2::event::Event::Quit { timestamp: now as u32 };
-        // println!("Pushing event {:?}", e);
-        self.event_context
-            .push_event(e)
-            .map_err(GameError::from)
+    pub fn quit(&mut self) {
+        self.event_context.interrupt();
     }
 }

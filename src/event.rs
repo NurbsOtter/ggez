@@ -91,80 +91,84 @@ pub trait EventHandler {
 pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
     where S: EventHandler
 {
-    {
-        let mut event_pump = ctx.sdl_context.event_pump()?;
+    // {
+    //     let mut event_pump = ctx.sdl_context.event_pump()?;
 
-        let mut continuing = true;
-        while continuing {
-            ctx.timer_context.tick();
+    //     let mut continuing = true;
+    //     while continuing {
+    //         ctx.timer_context.tick();
 
-            for event in event_pump.poll_iter() {
-                match event {
-                    Quit { .. } => {
-                        continuing = state.quit_event();
-                        // println!("Quit event: {:?}", t);
-                    }
-                    KeyDown {
-                        keycode,
-                        keymod,
-                        repeat,
-                        ..
-                    } => {
-                        if let Some(key) = keycode {
-                            if key == keyboard::Keycode::Escape {
-                                ctx.quit()?;
-                            } else {
-                                state.key_down_event(key, keymod, repeat)
-                            }
-                        }
-                    }
-                    KeyUp {
-                        keycode,
-                        keymod,
-                        repeat,
-                        ..
-                    } => {
-                        if let Some(key) = keycode {
-                            state.key_up_event(key, keymod, repeat)
-                        }
-                    }
-                    MouseButtonDown { mouse_btn, x, y, .. } => {
-                        state.mouse_button_down_event(mouse_btn, x, y)
-                    }
-                    MouseButtonUp { mouse_btn, x, y, .. } => {
-                        state.mouse_button_up_event(mouse_btn, x, y)
-                    }
-                    MouseMotion {
-                        mousestate,
-                        x,
-                        y,
-                        xrel,
-                        yrel,
-                        ..
-                    } => state.mouse_motion_event(mousestate, x, y, xrel, yrel),
-                    MouseWheel { x, y, .. } => state.mouse_wheel_event(x, y),
-                    ControllerButtonDown { button, .. } => {
-                        state.controller_button_down_event(button)
-                    }
-                    ControllerButtonUp { button, .. } => state.controller_button_up_event(button),
-                    ControllerAxisMotion { axis, value, .. } => {
-                        state.controller_axis_event(axis, value)
-                    }
-                    Window { win_event: event::WindowEvent::FocusGained, .. } => {
-                        state.focus_event(true)
-                    }
-                    Window { win_event: event::WindowEvent::FocusLost, .. } => {
-                        state.focus_event(false)
-                    }
-                    _ => {}
-                }
-            }
+    //         for event in event_pump.poll_iter() {
+    //             match event {
+    //                 Quit { .. } => {
+    //                     continuing = state.quit_event();
+    //                     // println!("Quit event: {:?}", t);
+    //                 }
+    //                 KeyDown {
+    //                     keycode,
+    //                     keymod,
+    //                     repeat,
+    //                     ..
+    //                 } => {
+    //                     if let Some(key) = keycode {
+    //                         if key == keyboard::Keycode::Escape {
+    //                             ctx.quit();
+    //                         } else {
+    //                             state.key_down_event(key, keymod, repeat)
+    //                         }
+    //                     }
+    //                 }
+    //                 KeyUp {
+    //                     keycode,
+    //                     keymod,
+    //                     repeat,
+    //                     ..
+    //                 } => {
+    //                     if let Some(key) = keycode {
+    //                         state.key_up_event(key, keymod, repeat)
+    //                     }
+    //                 }
+    //                 MouseButtonDown { mouse_btn, x, y, .. } => {
+    //                     state.mouse_button_down_event(mouse_btn, x, y)
+    //                 }
+    //                 MouseButtonUp { mouse_btn, x, y, .. } => {
+    //                     state.mouse_button_up_event(mouse_btn, x, y)
+    //                 }
+    //                 MouseMotion {
+    //                     mousestate,
+    //                     x,
+    //                     y,
+    //                     xrel,
+    //                     yrel,
+    //                     ..
+    //                 } => state.mouse_motion_event(mousestate, x, y, xrel, yrel),
+    //                 MouseWheel { x, y, .. } => state.mouse_wheel_event(x, y),
+    //                 ControllerButtonDown { button, .. } => {
+    //                     state.controller_button_down_event(button)
+    //                 }
+    //                 ControllerButtonUp { button, .. } => state.controller_button_up_event(button),
+    //                 ControllerAxisMotion { axis, value, .. } => {
+    //                     state.controller_axis_event(axis, value)
+    //                 }
+    //                 Window { win_event: event::WindowEvent::FocusGained, .. } => {
+    //                     state.focus_event(true)
+    //                 }
+    //                 Window { win_event: event::WindowEvent::FocusLost, .. } => {
+    //                     state.focus_event(false)
+    //                 }
+    //                 _ => {}
+    //             }
+    //         }
 
-            let dt = timer::get_delta(ctx);
-            state.update(ctx, dt)?;
-            state.draw(ctx)?;
-        }
+    //         let dt = timer::get_delta(ctx);
+    //         state.update(ctx, dt)?;
+    //         state.draw(ctx)?;
+    //     }
+    // }
+
+    // Until a proper eventhandling is implemented, this will be our game loop :D
+    loop {
+        state.draw(ctx)?;
     }
-
     Ok(())
 }

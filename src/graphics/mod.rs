@@ -13,14 +13,14 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::u16;
 
-use sdl2;
+use glutin;
 use image;
 use gfx;
 use gfx::texture;
 use gfx::traits::Device;
 use gfx::traits::FactoryExt;
 use gfx_device_gl;
-use gfx_window_sdl;
+use gfx_window_glutin;
 use gfx::Factory;
 
 
@@ -173,9 +173,7 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     screen_rect: Rect,
     dpi: (f32, f32, f32),
 
-    window: sdl2::video::Window,
-    #[allow(dead_code)]
-    gl_context: sdl2::video::GLContext,
+    window: glutin::Window,
     device: Box<D>,
     factory: Box<F>,
     encoder: gfx::Encoder<R, C>,
@@ -212,29 +210,26 @@ pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources,
 /// handy to keep around a bit longer.  Just in case something else
 /// crazy happens.
 #[allow(unused)]
-fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
+fn test_opengl_versions() {
     let mut major_versions = [4u8, 3u8, 2u8, 1u8];
     let minor_versions = [5u8, 4u8, 3u8, 2u8, 1u8, 0u8];
     major_versions.reverse();
     for major in &major_versions {
         for minor in &minor_versions {
-            let gl = video.gl_attr();
-            gl.set_context_version(*major, *minor);
-            gl.set_context_profile(sdl2::video::GLProfile::Core);
-            gl.set_red_size(5);
-            gl.set_green_size(5);
-            gl.set_blue_size(5);
-            gl.set_alpha_size(8);
+            let events_loop = glutin::EventsLoop::new();
+            let gl = glutin::GlRequest::Specific(glutin::Api::OpenGl, (*major, *minor));
+            let gl_profile = glutin::GlProfile::Core;
 
             print!("Requesting GL {}.{}... ", major, minor);
-            let window_builder = video.window("so full of hate", 640, 480);
-            let result = gfx_window_sdl::init::<ColorFormat, DepthFormat>(window_builder);
+            let window_builder = glutin::WindowBuilder::new()
+                                    .with_title("so full of hate".to_string())
+                                    .with_dimensions(640,480)
+                                    .with_gl(gl)
+                                    .with_gl_profile(gl_profile);
+            let result = window_builder.build_strict(&events_loop);
+
             match result {
-                Ok(_) => {
-                    println!("Ok, got GL {}.{}.",
-                             gl.context_major_version(),
-                             gl.context_minor_version())
-                }
+                Ok(_) => println!("Ok, got GL {}.{}", major, minor),
                 Err(res) => println!("Request failed: {:?}", res),
             }
         }
@@ -242,33 +237,36 @@ fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
 }
 
 impl GraphicsContext {
-    pub fn new(video: sdl2::VideoSubsystem,
+    pub fn new(events_loop: &glutin::EventsLoop,
                window_title: &str,
                screen_width: u32,
                screen_height: u32,
                vsync: bool)
                -> GameResult<GraphicsContext> {
         // WINDOW SETUP
-        let gl = video.gl_attr();
-        gl.set_context_version(GL_MAJOR_VERSION, GL_MINOR_VERSION);
-        gl.set_context_profile(sdl2::video::GLProfile::Core);
-        gl.set_red_size(5);
-        gl.set_green_size(5);
-        gl.set_blue_size(5);
-        gl.set_alpha_size(8);
-        let window_builder = video.window(window_title, screen_width, screen_height);
-        let (window, gl_context, device, mut factory, color_view, depth_view) =
-            gfx_window_sdl::init(window_builder)?;
+        let gl = glutin::GlRequest::Specific(glutin::Api::OpenGl, (GL_MAJOR_VERSION, GL_MINOR_VERSION));
+        let gl_profile = glutin::GlProfile::Core;
 
-        // println!("Vsync enabled: {}", vsync);
-        let vsync_int = if vsync { 1 } else { 0 };
-        video.gl_set_swap_interval(vsync_int);
+        let mut window_builder = glutin::WindowBuilder::new()
+                                .with_title(window_title)
+                                .with_dimensions(screen_width, screen_height)
+                                .with_gl(gl)
+                                .with_gl_profile(gl_profile);        
+        if vsync {
+            window_builder = window_builder.with_vsync();
+        }
+
+        let (window, device, mut factory, color_view, depth_view) =
+            gfx_window_glutin::init::<ColorFormat, DepthFormat>(window_builder, &events_loop);
+
         let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer().into();
-
-
-        let display_index = window.display_index()?;
-        let dpi = window.subsystem().display_dpi(display_index)?;
+        
+        // Since there's no actual implementation for obtaining DPI in glutin nor in winit it's using, we'll have to do with this HiDPI hack.
+        // Note: HiDPI factor given by glutin is sort of combination of HiDPI factor for width **and** height. Yes, it's actually useless :( 
+        let hidpi = window.hidpi_factor();
+        let sqrt_2 = 1.41421356237;
+        let dpi = (sqrt_2*96.0*hidpi, 96.0*hidpi, 96.0*hidpi);
 
         // GFX SETUP
         let pso = factory
@@ -317,7 +315,6 @@ impl GraphicsContext {
             dpi: dpi,
 
             window: window,
-            gl_context: gl_context,
             device: Box::new(device),
             factory: Box::new(factory),
             encoder: encoder,
@@ -348,7 +345,7 @@ impl GraphicsContext {
     }
 
     /// Returns a reference to the SDL window.  Ideally you should not need to use this.
-    pub fn get_window(&mut self) -> &mut sdl2::video::Window {
+    pub fn get_window(&mut self) -> &mut glutin::Window {
         &mut self.window
     }
 }
@@ -418,7 +415,7 @@ pub fn present(ctx: &mut Context) {
     // to do their own gfx drawing.  HOWEVER, the whole pipeline type
     // thing is a bigger hurdle, so this is fine for now.
     gfx.encoder.flush(&mut *gfx.device);
-    gfx.window.gl_swap_window();
+    gfx.window.swap_buffers();
     gfx.device.cleanup();
 }
 
@@ -548,16 +545,18 @@ pub fn get_point_size(ctx: &Context) -> f32 {
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
 pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
-    let video = ctx.sdl_context.video()?;
+    // TODO: implement!
+    // let video = ctx.sdl_context.video()?;
 
-    let gl = video.gl_attr();
+    // let gl = video.gl_attr();
 
-    Ok(format!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
-               GL_MAJOR_VERSION,
-               GL_MINOR_VERSION,
-               gl.context_major_version(),
-               gl.context_minor_version(),
-               gl.context_profile()))
+    // Ok(format!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
+    //            GL_MAJOR_VERSION,
+    //            GL_MINOR_VERSION,
+    //            gl.context_major_version(),
+    //            gl.context_minor_version(),
+    //            gl.context_profile()))
+    Err(GameError::UnknownError("Current implementation does not allow retrieval of renderer info".to_string()))
 }
 
 /// Returns a rectangle defining the coordinate system of the screen.

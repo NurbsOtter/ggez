@@ -2,35 +2,16 @@
 //! and handle top-level state, as well as handle input events such as keyboard
 //! and mouse.
 
-/// A key code.
-pub use sdl2::keyboard::Keycode;
-
-/// A struct that holds the state of modifier buttons such as ctrl or shift.
-pub use sdl2::keyboard::Mod;
-/// A mouse button press.
-pub use sdl2::mouse::MouseButton;
-/// A struct containing the mouse state at a given instant.
-pub use sdl2::mouse::MouseState;
-
-/// A controller button.
-pub use sdl2::controller::Button;
-/// A controller axis.
-pub use sdl2::controller::Axis;
-
-use sdl2::event::Event::*;
-use sdl2::event;
-use sdl2::mouse;
-use sdl2::keyboard;
-
-
+use glutin;
 use context::Context;
 use GameResult;
 use timer;
 
 use std::time::Duration;
 
-
-
+// This is an ugly hack - this should be done by fricking glutin, not us.
+// But hey, thanks glutin, now we have to have an explicit dependency on winit
+pub use winit::ModifiersState;
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
@@ -51,29 +32,29 @@ pub trait EventHandler {
     /// `graphics::present()` and `timer::sleep_until_next_frame()`
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
 
-    fn mouse_button_down_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
+    // fn mouse_button_down_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
 
-    fn mouse_button_up_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
+    // fn mouse_button_up_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
 
-    fn mouse_motion_event(&mut self,
-                          _state: mouse::MouseState,
-                          _x: i32,
-                          _y: i32,
-                          _xrel: i32,
-                          _yrel: i32) {
-    }
+    // fn mouse_motion_event(&mut self,
+    //                       _state: mouse::MouseState,
+    //                       _x: i32,
+    //                       _y: i32,
+    //                       _xrel: i32,
+    //                       _yrel: i32) {
+    // }
 
-    fn mouse_wheel_event(&mut self, _x: i32, _y: i32) {}
+    // fn mouse_wheel_event(&mut self, _x: i32, _y: i32) {}
 
-    fn key_down_event(&mut self, _keycode: Keycode, _keymod: Mod, _repeat: bool) {}
+    fn key_down_event(&mut self, scan_code: glutin::ScanCode, virtual_key: Option<glutin::VirtualKeyCode>, modifiers: ModifiersState) {}
 
-    fn key_up_event(&mut self, _keycode: Keycode, _keymod: Mod, _repeat: bool) {}
+    fn key_up_event(&mut self, scan_code: glutin::ScanCode, virtual_key: Option<glutin::VirtualKeyCode>, modifiers: ModifiersState) {}
 
-    fn controller_button_down_event(&mut self, _btn: Button) {}
-    fn controller_button_up_event(&mut self, _btn: Button) {}
-    fn controller_axis_event(&mut self, _axis: Axis, _value: i16) {}
+    // fn controller_button_down_event(&mut self, _btn: Button) {}
+    // fn controller_button_up_event(&mut self, _btn: Button) {}
+    // fn controller_axis_event(&mut self, _axis: Axis, _value: i16) {}
 
-    fn focus_event(&mut self, _gained: bool) {}
+    // fn focus_event(&mut self, _gained: bool) {}
 
     /// Called upon a quit event.  If it returns true,
     /// the game does not exit.
@@ -91,6 +72,31 @@ pub trait EventHandler {
 pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
     where S: EventHandler
 {
+    let mut continuing = true;
+    while continuing {
+        ctx.timer_context.tick();
+
+        ctx.event_context.poll_events(|event| {
+            match event {
+                glutin::Event::WindowEvent { event, .. } => match event {
+                    glutin::WindowEvent::KeyboardInput(glutin::ElementState::Pressed, scan_code, virtual_key, modifiers) => {
+                        state.key_down_event(scan_code, virtual_key, modifiers);
+                    },
+                    glutin::WindowEvent::KeyboardInput(glutin::ElementState::Released, scan_code, virtual_key, modifiers) => {
+                        state.key_up_event(scan_code, virtual_key, modifiers);
+                    },
+                    glutin::WindowEvent::Closed => {
+                        continuing = state.quit_event();
+                    }
+                    _ => (),
+                },
+            }
+        });
+
+        let dt = timer::get_delta(ctx);
+        state.update(ctx, dt);
+        state.draw(ctx);
+    }
     // {
     //     let mut event_pump = ctx.sdl_context.event_pump()?;
 
@@ -167,8 +173,5 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
     // }
 
     // Until a proper eventhandling is implemented, this will be our game loop :D
-    loop {
-        state.draw(ctx)?;
-    }
     Ok(())
 }

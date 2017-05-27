@@ -92,6 +92,7 @@
 
 
 extern crate sdl2;
+extern crate winit;
 extern crate glutin;
 extern crate app_dirs;
 #[macro_use]

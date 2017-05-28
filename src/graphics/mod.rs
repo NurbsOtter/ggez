@@ -347,7 +347,7 @@ impl GraphicsContext {
         Ok(())
     }
 
-    /// Returns a reference to the SDL window.  Ideally you should not need to use this.
+    /// Returns a reference to the glutin window. Ideally you should not need to use this.
     pub fn get_window(&mut self) -> &mut glutin::Window {
         &mut self.window
     }
@@ -548,17 +548,6 @@ pub fn get_point_size(ctx: &Context) -> f32 {
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
 pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
-    // TODO: implement!
-    // let video = ctx.sdl_context.video()?;
-
-    // let gl = video.gl_attr();
-
-    // Ok(format!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
-    //            GL_MAJOR_VERSION,
-    //            GL_MINOR_VERSION,
-    //            gl.context_major_version(),
-    //            gl.context_minor_version(),
-    //            gl.context_profile()))
     Err(GameError::UnknownError("Current implementation does not allow retrieval of renderer info".to_string()))
 }
 

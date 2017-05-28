@@ -5,11 +5,10 @@ use std::error::Error;
 use std::fmt;
 
 use gfx;
-use gfx_window_sdl;
 
 use image;
 use rodio::decoder::DecoderError;
-use sdl2;
+use glutin;
 use app_dirs::AppDirsError;
 use toml;
 use zip;
@@ -23,7 +22,8 @@ pub enum GameError {
     ResourceNotFound(String, Vec<std::path::PathBuf>),
     RenderError(String),
     AudioError(String),
-    WindowError(gfx_window_sdl::InitError),
+    WindowError(glutin::CreationError),
+    ContextError(glutin::ContextError),
     IOError(std::io::Error),
     FontError(String),
     VideoError(String),
@@ -62,43 +62,15 @@ impl From<String> for GameError {
     }
 }
 
-impl From<gfx_window_sdl::InitError> for GameError {
-    fn from(s: gfx_window_sdl::InitError) -> GameError {
+impl From<glutin::CreationError> for GameError {
+    fn from(s: glutin::CreationError) -> GameError {
         GameError::WindowError(s)
     }
 }
 
-impl From<sdl2::IntegerOrSdlError> for GameError {
-    fn from(e: sdl2::IntegerOrSdlError) -> GameError {
-        match e {
-            sdl2::IntegerOrSdlError::IntegerOverflows(s, i) => {
-                let message = format!("Integer overflow: {}, str {}", i, s);
-                GameError::UnknownError(message)
-            }
-            sdl2::IntegerOrSdlError::SdlError(s) => GameError::UnknownError(s),
-        }
-    }
-}
-
-impl From<sdl2::filesystem::PrefPathError> for GameError {
-    fn from(e: sdl2::filesystem::PrefPathError) -> GameError {
-        let msg = match e {
-            sdl2::filesystem::PrefPathError::InvalidOrganizationName(e) => {
-                format!("Invalid organization name, {}", e)
-            }
-            sdl2::filesystem::PrefPathError::InvalidApplicationName(e) => {
-                format!("Invalid application name, {}", e)
-            }
-            sdl2::filesystem::PrefPathError::SdlError(e) => e,
-        };
-        GameError::ConfigError(msg)
-    }
-}
-
-impl From<sdl2::render::TextureValueError> for GameError {
-    fn from(e: sdl2::render::TextureValueError) -> GameError {
-        let msg = e.description();
-        GameError::ResourceLoadError(msg.to_owned())
+impl From<glutin::ContextError> for GameError {
+    fn from(s: glutin::ContextError) -> GameError {
+        GameError::ContextError(s)
     }
 }
 

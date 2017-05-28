@@ -399,7 +399,6 @@ mod tests {
     //#[test]
     //#fn test_app_dirs() {
     //#use app_dirs::*;
-    //#use sdl2;
 
     //     let app_info = AppInfo{name:"test", author:"ggez"};
     //     println!("user config: {:?}", get_app_root(AppDataType::UserConfig, &app_info));
@@ -409,8 +408,6 @@ mod tests {
     //     println!("shared config: {:?}", get_app_root(AppDataType::SharedConfig, &app_info));
     //     println!("shared data: {:?}", get_app_root(AppDataType::SharedData, &app_info));
 
-    //     println!("SDL base path: {}", sdl2::filesystem::base_path().unwrap());
-    //     println!("SDL pref path: {}", sdl2::filesystem::pref_path("ggez", "id").unwrap());
 
     // Okay, we want user data for data, user config for config,
     // On Linux these map to:

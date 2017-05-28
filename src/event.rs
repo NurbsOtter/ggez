@@ -9,9 +9,12 @@ use timer;
 
 use std::time::Duration;
 
+use graphics;
+
 // This is an ugly hack - this should be done by fricking glutin, not us.
 // But hey, thanks glutin, now we have to have an explicit dependency on winit
 pub use winit::ModifiersState;
+pub use glutin::{MouseButton, ScanCode, TouchPhase, VirtualKeyCode};
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
@@ -21,6 +24,7 @@ pub use winit::ModifiersState;
 /// The default event handlers do nothing, apart from
 /// `key_down_event()`, which will by default exit the game if escape
 /// is pressed.  Just override the methods you want to do things with.
+#[allow(unused_variables)]
 pub trait EventHandler {
     /// Called upon each physics update to the game.
     /// This should be where the game's logic takes place.
@@ -31,30 +35,20 @@ pub trait EventHandler {
     /// `graphics::clear()` and end it with
     /// `graphics::present()` and `timer::sleep_until_next_frame()`
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
+    
+    fn mouse_button_down_event(&mut self, button: glutin::MouseButton, position: graphics::Point) {}
 
-    // fn mouse_button_down_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
+    fn mouse_button_up_event(&mut self, button: glutin::MouseButton, position: graphics::Point) {}
 
-    // fn mouse_button_up_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
+    fn mouse_motion_event(&mut self, position: graphics::Point) {}
 
-    // fn mouse_motion_event(&mut self,
-    //                       _state: mouse::MouseState,
-    //                       _x: i32,
-    //                       _y: i32,
-    //                       _xrel: i32,
-    //                       _yrel: i32) {
-    // }
-
-    // fn mouse_wheel_event(&mut self, _x: i32, _y: i32) {}
+    fn mouse_wheel_event(&mut self, mouse_scroll: glutin::MouseScrollDelta, touch_phase: glutin::TouchPhase) {}
 
     fn key_down_event(&mut self, scan_code: glutin::ScanCode, virtual_key: Option<glutin::VirtualKeyCode>, modifiers: ModifiersState) {}
 
     fn key_up_event(&mut self, scan_code: glutin::ScanCode, virtual_key: Option<glutin::VirtualKeyCode>, modifiers: ModifiersState) {}
 
-    // fn controller_button_down_event(&mut self, _btn: Button) {}
-    // fn controller_button_up_event(&mut self, _btn: Button) {}
-    // fn controller_axis_event(&mut self, _axis: Axis, _value: i16) {}
-
-    // fn focus_event(&mut self, _gained: bool) {}
+    fn focus_event(&mut self, gained: bool) {}
 
     /// Called upon a quit event.  If it returns true,
     /// the game does not exit.
@@ -73,6 +67,7 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
     where S: EventHandler
 {
     let mut continuing = true;
+    let mut new_mouse_position : graphics::Point = graphics::Point::zero();
     while continuing {
         ctx.timer_context.tick();
 
@@ -85,6 +80,22 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                     glutin::WindowEvent::KeyboardInput(glutin::ElementState::Released, scan_code, virtual_key, modifiers) => {
                         state.key_up_event(scan_code, virtual_key, modifiers);
                     },
+                    glutin::WindowEvent::MouseMoved(x, y) => {
+                        new_mouse_position = graphics::Point::new(x as f32, y as f32);
+                        state.mouse_motion_event(new_mouse_position);
+                    },
+                    glutin::WindowEvent::MouseInput(glutin::ElementState::Pressed, mouse_button) => {
+                        state.mouse_button_down_event(mouse_button, ctx.mouse_position);
+                    },
+                    glutin::WindowEvent::MouseInput(glutin::ElementState::Released, mouse_button) => {
+                        state.mouse_button_up_event(mouse_button, ctx.mouse_position);
+                    },
+                    glutin::WindowEvent::MouseWheel(mouse_scroll, touch_phase) => {
+                        state.mouse_wheel_event(mouse_scroll, touch_phase);
+                    },
+                    glutin::WindowEvent::Focused(focus) => {
+                        state.focus_event(focus);
+                    }
                     glutin::WindowEvent::Closed => {
                         continuing = state.quit_event();
                     }
@@ -93,85 +104,11 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
             }
         });
 
+        ctx.mouse_position = new_mouse_position;
+
         let dt = timer::get_delta(ctx);
         state.update(ctx, dt);
         state.draw(ctx);
     }
-    // {
-    //     let mut event_pump = ctx.sdl_context.event_pump()?;
-
-    //     let mut continuing = true;
-    //     while continuing {
-    //         ctx.timer_context.tick();
-
-    //         for event in event_pump.poll_iter() {
-    //             match event {
-    //                 Quit { .. } => {
-    //                     continuing = state.quit_event();
-    //                     // println!("Quit event: {:?}", t);
-    //                 }
-    //                 KeyDown {
-    //                     keycode,
-    //                     keymod,
-    //                     repeat,
-    //                     ..
-    //                 } => {
-    //                     if let Some(key) = keycode {
-    //                         if key == keyboard::Keycode::Escape {
-    //                             ctx.quit();
-    //                         } else {
-    //                             state.key_down_event(key, keymod, repeat)
-    //                         }
-    //                     }
-    //                 }
-    //                 KeyUp {
-    //                     keycode,
-    //                     keymod,
-    //                     repeat,
-    //                     ..
-    //                 } => {
-    //                     if let Some(key) = keycode {
-    //                         state.key_up_event(key, keymod, repeat)
-    //                     }
-    //                 }
-    //                 MouseButtonDown { mouse_btn, x, y, .. } => {
-    //                     state.mouse_button_down_event(mouse_btn, x, y)
-    //                 }
-    //                 MouseButtonUp { mouse_btn, x, y, .. } => {
-    //                     state.mouse_button_up_event(mouse_btn, x, y)
-    //                 }
-    //                 MouseMotion {
-    //                     mousestate,
-    //                     x,
-    //                     y,
-    //                     xrel,
-    //                     yrel,
-    //                     ..
-    //                 } => state.mouse_motion_event(mousestate, x, y, xrel, yrel),
-    //                 MouseWheel { x, y, .. } => state.mouse_wheel_event(x, y),
-    //                 ControllerButtonDown { button, .. } => {
-    //                     state.controller_button_down_event(button)
-    //                 }
-    //                 ControllerButtonUp { button, .. } => state.controller_button_up_event(button),
-    //                 ControllerAxisMotion { axis, value, .. } => {
-    //                     state.controller_axis_event(axis, value)
-    //                 }
-    //                 Window { win_event: event::WindowEvent::FocusGained, .. } => {
-    //                     state.focus_event(true)
-    //                 }
-    //                 Window { win_event: event::WindowEvent::FocusLost, .. } => {
-    //                     state.focus_event(false)
-    //                 }
-    //                 _ => {}
-    //             }
-    //         }
-
-    //         let dt = timer::get_delta(ctx);
-    //         state.update(ctx, dt)?;
-    //         state.draw(ctx)?;
-    //     }
-    // }
-
-    // Until a proper eventhandling is implemented, this will be our game loop :D
     Ok(())
 }

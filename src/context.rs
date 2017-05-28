@@ -32,7 +32,8 @@ pub struct Context {
     pub timer_context: timer::TimeContext,
     pub audio_context: audio::AudioContext,
 
-    pub default_font: graphics::Font,
+    pub mouse_position: graphics::Point,
+    pub default_font: graphics::Font
 }
 
 impl fmt::Debug for Context {
@@ -57,6 +58,7 @@ impl Context {
         let audio_context = audio::AudioContext::new()?;
         let event_context = glutin::EventsLoop::new();
         let timer_context = timer::TimeContext::new();
+        let default_mouse_position = graphics::Point::zero();
         let font = graphics::Font::default_font()?;
         let graphics_context = graphics::GraphicsContext::new(&event_context,
                                                               &conf.window_title,
@@ -71,7 +73,8 @@ impl Context {
             event_context: event_context,
             timer_context: timer_context,
             audio_context: audio_context,
-            
+
+            mouse_position : default_mouse_position,
             default_font: font,
         };
 

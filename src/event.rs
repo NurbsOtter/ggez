@@ -66,11 +66,11 @@ pub trait EventHandler {
 pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
     where S: EventHandler
 {
-    let mut continuing = true;
+    let mut running = true;
     let mut new_mouse_position : graphics::Point = graphics::Point::zero();
-    while continuing {
+    while running {
         ctx.timer_context.tick();
-
+        
         ctx.event_context.poll_events(|event| {
             match event {
                 glutin::Event::WindowEvent { event, .. } => match event {
@@ -97,18 +97,22 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                         state.focus_event(focus);
                     }
                     glutin::WindowEvent::Closed => {
-                        continuing = state.quit_event();
+                        running = state.quit_event();
                     }
                     _ => (),
                 },
             }
         });
-
         ctx.mouse_position = new_mouse_position;
+        
 
         let dt = timer::get_delta(ctx);
         state.update(ctx, dt);
         state.draw(ctx);
+
+        if running {
+            running = ctx.running;
+        }
     }
     Ok(())
 }

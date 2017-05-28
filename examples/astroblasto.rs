@@ -623,18 +623,18 @@ impl EventHandler for MainState {
 
     // Handle key events.  These just map keyboard events
     // and alter our input state appropriately.
-    fn key_down_event(&mut self, keycode: Keycode, _keymod: Mod, _repeat: bool) {
-        match keycode {
-            Keycode::Up => {
+    fn key_down_event(&mut self, scan_code: ScanCode, virtual_key: Option<VirtualKeyCode>, modifiers: ModifiersState) {
+        match virtual_key {
+            Some(VirtualKeyCode::Up) => {
                 self.input.yaxis = 1.0;
             }
-            Keycode::Left => {
+            Some(VirtualKeyCode::Left) => {
                 self.input.xaxis = -1.0;
             }
-            Keycode::Right => {
+            Some(VirtualKeyCode::Right) => {
                 self.input.xaxis = 1.0;
             }
-            Keycode::Space => {
+            Some(VirtualKeyCode::Space) => {
                 self.input.fire = true;
             }
             _ => (), // Do nothing
@@ -642,15 +642,15 @@ impl EventHandler for MainState {
     }
 
 
-    fn key_up_event(&mut self, keycode: Keycode, _keymod: Mod, _repeat: bool) {
-        match keycode {
-            Keycode::Up => {
+    fn key_up_event(&mut self, scan_code: ScanCode, virtual_key: Option<VirtualKeyCode>, modifiers: ModifiersState) {
+        match virtual_key {
+            Some(VirtualKeyCode::Up) => {
                 self.input.yaxis = 0.0;
             }
-            Keycode::Left | Keycode::Right => {
+            Some(VirtualKeyCode::Left) | Some(VirtualKeyCode::Right) => {
                 self.input.xaxis = 0.0;
             }
-            Keycode::Space => {
+            Some(VirtualKeyCode::Space) => {
                 self.input.fire = false;
             }
             _ => (), // Do nothing

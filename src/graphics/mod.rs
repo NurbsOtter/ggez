@@ -258,9 +258,6 @@ impl GraphicsContext {
 
         let (window, device, mut factory, color_view, depth_view) =
             gfx_window_glutin::init::<ColorFormat, DepthFormat>(window_builder, &events_loop);
-
-        let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
-            factory.create_command_buffer().into();
         
         // Since there's no actual implementation for obtaining DPI in glutin nor in winit it's using, we'll have to do with this HiDPI hack.
         // Note: HiDPI factor given by glutin is sort of combination of HiDPI factor for width **and** height. Yes, it's actually useless :( 
@@ -548,7 +545,7 @@ pub fn get_point_size(ctx: &Context) -> f32 {
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
 pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
-    Err(GameError::UnknownError("Current implementation does not allow retrieval of renderer info".to_string()))
+    unimplemented!();
 }
 
 /// Returns a rectangle defining the coordinate system of the screen.

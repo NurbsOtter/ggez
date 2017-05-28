@@ -32,6 +32,7 @@ pub struct Context {
     pub timer_context: timer::TimeContext,
     pub audio_context: audio::AudioContext,
 
+    pub running: bool,
     pub mouse_position: graphics::Point,
     pub default_font: graphics::Font
 }
@@ -47,7 +48,7 @@ impl fmt::Debug for Context {
 /// An empty string in the conf's `window_icon`
 /// means to do nothing.
 fn set_window_icon(context: &mut Context) -> GameResult<()> {
-    Err(GameError::UnknownError("Current implementation does not allow setting a window icon".to_string()))
+    unimplemented!();
 }
 
 impl Context {
@@ -74,6 +75,7 @@ impl Context {
             timer_context: timer_context,
             audio_context: audio_context,
 
+            running: true,
             mouse_position : default_mouse_position,
             default_font: font,
         };
@@ -112,6 +114,6 @@ impl Context {
 
     /// Triggers a Quit event.
     pub fn quit(&mut self) {
-        self.event_context.interrupt();
+        self.running = false;
     }
 }

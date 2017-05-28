@@ -269,6 +269,9 @@ impl GraphicsContext {
         let dpi = (sqrt_2*96.0*hidpi, 96.0*hidpi, 96.0*hidpi);
 
         // GFX SETUP
+        let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
+            factory.create_command_buffer().into();
+            
         let pso = factory
             .create_pipeline_simple(include_bytes!("shader/basic_150.glslv"),
                                     include_bytes!("shader/basic_150.glslf"),

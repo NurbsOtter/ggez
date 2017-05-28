@@ -1,16 +1,13 @@
 
 use glutin;
-use image::{self, GenericImage};
 
 use std::fmt;
-use std::io::Read;
 
 use audio;
 use conf;
 use filesystem::Filesystem;
 use graphics;
 use timer;
-use GameError;
 use GameResult;
 
 
@@ -47,6 +44,7 @@ impl fmt::Debug for Context {
 /// Sets the window icon from the Conf `window_icon` field.
 /// An empty string in the conf's `window_icon`
 /// means to do nothing.
+#[allow(unused)]
 fn set_window_icon(context: &mut Context) -> GameResult<()> {
     unimplemented!();
 }

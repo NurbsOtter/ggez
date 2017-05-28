@@ -107,8 +107,8 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
         
 
         let dt = timer::get_delta(ctx);
-        state.update(ctx, dt);
-        state.draw(ctx);
+        let _ = state.update(ctx, dt);
+        let _ = state.draw(ctx);
 
         if running {
             running = ctx.running;

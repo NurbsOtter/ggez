@@ -415,7 +415,7 @@ pub fn present(ctx: &mut Context) {
     // to do their own gfx drawing.  HOWEVER, the whole pipeline type
     // thing is a bigger hurdle, so this is fine for now.
     gfx.encoder.flush(&mut *gfx.device);
-    gfx.window.swap_buffers();
+    let _ = gfx.window.swap_buffers();
     gfx.device.cleanup();
 }
 
@@ -544,6 +544,7 @@ pub fn get_point_size(ctx: &Context) -> f32 {
 /// Returns a string that tells a little about the obtained rendering mode.
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
+#[allow(unused)]
 pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
     unimplemented!();
 }
@@ -840,11 +841,12 @@ impl Image {
 impl fmt::Debug for Image {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
-               "<Image: {}x{}, {:p}, texture address {:p}>",
+               "<Image: {}x{}, {:p}, texture address {:p}, sampler: {:?}>",
                self.width(),
                self.height(),
                self,
-               &self.texture)
+               &self.texture,
+               &self.sampler_info)
     }
 }
 
@@ -954,7 +956,7 @@ impl Mesh {
     /// Create a new `Mesh` from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
-    fn from_triangles(ctx: &mut Context, triangles: &[Point]) -> GameResult<Mesh> {
+    pub fn from_triangles(ctx: &mut Context, triangles: &[Point]) -> GameResult<Mesh> {
         // This is kind of non-ideal but works for now.
         let points: Vec<Vertex> = triangles.into_iter()
             .map(|p| Vertex{

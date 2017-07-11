@@ -6,6 +6,9 @@ use glutin;
 use context::Context;
 use GameResult;
 use timer;
+use gilrs::Gilrs;
+use gilrs::Event;
+pub use gilrs::{Button,NativeEvCode,Axis};
 
 use std::time::Duration;
 
@@ -47,6 +50,12 @@ pub trait EventHandler {
     fn key_down_event(&mut self, scan_code: glutin::ScanCode, virtual_key: Option<glutin::VirtualKeyCode>, modifiers: ModifiersState) {}
 
     fn key_up_event(&mut self, scan_code: glutin::ScanCode, virtual_key: Option<glutin::VirtualKeyCode>, modifiers: ModifiersState) {}
+
+    fn gamepad_button_down_event(&mut self,id:usize,button:Button,ev_code:NativeEvCode){}
+    fn gamepad_button_up_event(&mut self,id:usize,button:Button,ev_code:NativeEvCode){}
+    fn gamepad_axis_change_event(&mut self,id:usize,axis:Axis,value:f32,ev_code:NativeEvCode){}
+    fn gamepad_disconnected_event(&mut self,id:usize){}
+    fn gamepad_connected_event(&mut self,id:usize){}
 
     fn focus_event(&mut self, gained: bool) {}
 
@@ -101,8 +110,28 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                     }
                     _ => (),
                 },
-            }
+            }            
         });
+        for event in ctx.gamepad_context.poll_events(){
+                match event{
+                    (id,Event::ButtonPressed(but,ev))=>{
+                        state.gamepad_button_down_event(id,but,ev);
+                    },
+                    (id,Event::ButtonReleased(but,ev))=>{
+                        state.gamepad_button_up_event(id,but,ev);
+                    },
+                    (id,Event::AxisChanged(axis,val,ev))=>{
+                        state.gamepad_axis_change_event(id,axis,val,ev);
+                    },
+                    (id,Event::Disconnected)=>{
+                        state.gamepad_disconnected_event(id);
+                    },
+                    (id,Event::Connected)=>{
+                        state.gamepad_connected_event(id);
+                    },
+                    _=>(),
+                }
+        }
         ctx.mouse_position = new_mouse_position;
         
 

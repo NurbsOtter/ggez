@@ -5,10 +5,12 @@ use std::fmt;
 
 use audio;
 use conf;
+use gilrs;
 use filesystem::Filesystem;
 use graphics;
 use timer;
 use GameResult;
+
 
 
 /// A `Context` is an object that holds on to global resources.
@@ -28,6 +30,7 @@ pub struct Context {
     pub event_context: glutin::EventsLoop,
     pub timer_context: timer::TimeContext,
     pub audio_context: audio::AudioContext,
+    pub gamepad_context:gilrs::Gilrs,
 
     pub running: bool,
     pub mouse_position: graphics::Point,
@@ -64,6 +67,7 @@ impl Context {
                                                               conf.window_width,
                                                               conf.window_height,
                                                               conf.vsync)?;
+        let gamepad_context = gilrs::Gilrs::new();
 
         let mut ctx = Context {
             conf: conf,
@@ -72,6 +76,7 @@ impl Context {
             event_context: event_context,
             timer_context: timer_context,
             audio_context: audio_context,
+            gamepad_context:gamepad_context,
 
             running: true,
             mouse_position : default_mouse_position,

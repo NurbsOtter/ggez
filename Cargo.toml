@@ -45,7 +45,7 @@ serde_derive = "1.0"
 toml = "0.4"
 winit = "0.6.4"
 lyon = "0.4.1"
-
+gilrs = "0.4.4"
 [dev-dependencies]
 
 cgmath = "0.14"

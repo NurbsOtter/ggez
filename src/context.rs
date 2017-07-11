@@ -30,11 +30,11 @@ pub struct Context {
     pub event_context: glutin::EventsLoop,
     pub timer_context: timer::TimeContext,
     pub audio_context: audio::AudioContext,
-    pub gamepad_context:gilrs::Gilrs,
+    pub gamepad_context: gilrs::Gilrs,
 
     pub running: bool,
     pub mouse_position: graphics::Point,
-    pub default_font: graphics::Font
+    pub default_font: graphics::Font,
 }
 
 impl fmt::Debug for Context {
@@ -62,11 +62,13 @@ impl Context {
         let timer_context = timer::TimeContext::new();
         let default_mouse_position = graphics::Point::zero();
         let font = graphics::Font::default_font()?;
-        let graphics_context = graphics::GraphicsContext::new(&event_context,
-                                                              &conf.window_title,
-                                                              conf.window_width,
-                                                              conf.window_height,
-                                                              conf.vsync)?;
+        let graphics_context = graphics::GraphicsContext::new(
+            &event_context,
+            &conf.window_title,
+            conf.window_width,
+            conf.window_height,
+            conf.vsync,
+        )?;
         let gamepad_context = gilrs::Gilrs::new();
 
         let mut ctx = Context {
@@ -76,10 +78,10 @@ impl Context {
             event_context: event_context,
             timer_context: timer_context,
             audio_context: audio_context,
-            gamepad_context:gamepad_context,
+            gamepad_context: gamepad_context,
 
             running: true,
-            mouse_position : default_mouse_position,
+            mouse_position: default_mouse_position,
             default_font: font,
         };
 
@@ -92,14 +94,15 @@ impl Context {
     /// file from its default path, using the given `Conf`
     /// object as a default if none is found.
     ///
-    /// The `game_id` and `author` are game-specific strings that 
+    /// The `game_id` and `author` are game-specific strings that
     /// are used to locate the default storage locations for the
     /// platform it looks in; for instance, on Linux, it will
     /// look for `~/.config/id/conf.toml`
-    pub fn load_from_conf(game_id: &'static str,
-                          author: &'static str,
-                          default_config: conf::Conf)
-                          -> GameResult<Context> {
+    pub fn load_from_conf(
+        game_id: &'static str,
+        author: &'static str,
+        default_config: conf::Conf,
+    ) -> GameResult<Context> {
 
         let mut fs = Filesystem::new(game_id, author)?;
 

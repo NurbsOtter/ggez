@@ -8,7 +8,7 @@ use GameResult;
 use timer;
 use gilrs::Gilrs;
 use gilrs::Event;
-pub use gilrs::{Button,NativeEvCode,Axis};
+pub use gilrs::{Button, NativeEvCode, Axis};
 
 use std::time::Duration;
 
@@ -38,24 +38,48 @@ pub trait EventHandler {
     /// `graphics::clear()` and end it with
     /// `graphics::present()` and `timer::sleep_until_next_frame()`
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
-    
+
     fn mouse_button_down_event(&mut self, button: glutin::MouseButton, position: graphics::Point) {}
 
     fn mouse_button_up_event(&mut self, button: glutin::MouseButton, position: graphics::Point) {}
 
     fn mouse_motion_event(&mut self, position: graphics::Point) {}
 
-    fn mouse_wheel_event(&mut self, mouse_scroll: glutin::MouseScrollDelta, touch_phase: glutin::TouchPhase) {}
+    fn mouse_wheel_event(
+        &mut self,
+        mouse_scroll: glutin::MouseScrollDelta,
+        touch_phase: glutin::TouchPhase,
+    ) {
+    }
 
-    fn key_down_event(&mut self, scan_code: glutin::ScanCode, virtual_key: Option<glutin::VirtualKeyCode>, modifiers: ModifiersState) {}
+    fn key_down_event(
+        &mut self,
+        scan_code: glutin::ScanCode,
+        virtual_key: Option<glutin::VirtualKeyCode>,
+        modifiers: ModifiersState,
+    ) {
+    }
 
-    fn key_up_event(&mut self, scan_code: glutin::ScanCode, virtual_key: Option<glutin::VirtualKeyCode>, modifiers: ModifiersState) {}
+    fn key_up_event(
+        &mut self,
+        scan_code: glutin::ScanCode,
+        virtual_key: Option<glutin::VirtualKeyCode>,
+        modifiers: ModifiersState,
+    ) {
+    }
 
-    fn gamepad_button_down_event(&mut self,id:usize,button:Button,ev_code:NativeEvCode){}
-    fn gamepad_button_up_event(&mut self,id:usize,button:Button,ev_code:NativeEvCode){}
-    fn gamepad_axis_change_event(&mut self,id:usize,axis:Axis,value:f32,ev_code:NativeEvCode){}
-    fn gamepad_disconnected_event(&mut self,id:usize){}
-    fn gamepad_connected_event(&mut self,id:usize){}
+    fn gamepad_button_down_event(&mut self, id: usize, button: Button, ev_code: NativeEvCode) {}
+    fn gamepad_button_up_event(&mut self, id: usize, button: Button, ev_code: NativeEvCode) {}
+    fn gamepad_axis_change_event(
+        &mut self,
+        id: usize,
+        axis: Axis,
+        value: f32,
+        ev_code: NativeEvCode,
+    ) {
+    }
+    fn gamepad_disconnected_event(&mut self, id: usize) {}
+    fn gamepad_connected_event(&mut self, id: usize) {}
 
     fn focus_event(&mut self, gained: bool) {}
 
@@ -73,35 +97,52 @@ pub trait EventHandler {
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the `timer` module for more info.
 pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
-    where S: EventHandler
+where
+    S: EventHandler,
 {
     let mut running = true;
-    let mut new_mouse_position : graphics::Point = graphics::Point::zero();
+    let mut new_mouse_position: graphics::Point = graphics::Point::zero();
     while running {
         ctx.timer_context.tick();
-        
-        ctx.event_context.poll_events(|event| {
-            match event {
-                glutin::Event::WindowEvent { event, .. } => match event {
-                    glutin::WindowEvent::KeyboardInput(glutin::ElementState::Pressed, scan_code, virtual_key, modifiers) => {
+
+        ctx.event_context.poll_events(|event| match event {
+            glutin::Event::WindowEvent { event, .. } => {
+                match event {
+                    glutin::WindowEvent::KeyboardInput(
+                        glutin::ElementState::Pressed,
+                        scan_code,
+                        virtual_key,
+                        modifiers,
+                    ) => {
                         state.key_down_event(scan_code, virtual_key, modifiers);
-                    },
-                    glutin::WindowEvent::KeyboardInput(glutin::ElementState::Released, scan_code, virtual_key, modifiers) => {
+                    }
+                    glutin::WindowEvent::KeyboardInput(
+                        glutin::ElementState::Released,
+                        scan_code,
+                        virtual_key,
+                        modifiers,
+                    ) => {
                         state.key_up_event(scan_code, virtual_key, modifiers);
-                    },
+                    }
                     glutin::WindowEvent::MouseMoved(x, y) => {
                         new_mouse_position = graphics::Point::new(x as f32, y as f32);
                         state.mouse_motion_event(new_mouse_position);
-                    },
-                    glutin::WindowEvent::MouseInput(glutin::ElementState::Pressed, mouse_button) => {
+                    }
+                    glutin::WindowEvent::MouseInput(
+                        glutin::ElementState::Pressed,
+                        mouse_button,
+                    ) => {
                         state.mouse_button_down_event(mouse_button, ctx.mouse_position);
-                    },
-                    glutin::WindowEvent::MouseInput(glutin::ElementState::Released, mouse_button) => {
+                    }
+                    glutin::WindowEvent::MouseInput(
+                        glutin::ElementState::Released,
+                        mouse_button,
+                    ) => {
                         state.mouse_button_up_event(mouse_button, ctx.mouse_position);
-                    },
+                    }
                     glutin::WindowEvent::MouseWheel(mouse_scroll, touch_phase) => {
                         state.mouse_wheel_event(mouse_scroll, touch_phase);
-                    },
+                    }
                     glutin::WindowEvent::Focused(focus) => {
                         state.focus_event(focus);
                     }
@@ -109,31 +150,31 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                         running = state.quit_event();
                     }
                     _ => (),
-                },
-            }            
-        });
-        for event in ctx.gamepad_context.poll_events(){
-                match event{
-                    (id,Event::ButtonPressed(but,ev))=>{
-                        state.gamepad_button_down_event(id,but,ev);
-                    },
-                    (id,Event::ButtonReleased(but,ev))=>{
-                        state.gamepad_button_up_event(id,but,ev);
-                    },
-                    (id,Event::AxisChanged(axis,val,ev))=>{
-                        state.gamepad_axis_change_event(id,axis,val,ev);
-                    },
-                    (id,Event::Disconnected)=>{
-                        state.gamepad_disconnected_event(id);
-                    },
-                    (id,Event::Connected)=>{
-                        state.gamepad_connected_event(id);
-                    },
-                    _=>(),
                 }
+            }
+        });
+        for event in ctx.gamepad_context.poll_events() {
+            match event {
+                (id, Event::ButtonPressed(but, ev)) => {
+                    state.gamepad_button_down_event(id, but, ev);
+                }
+                (id, Event::ButtonReleased(but, ev)) => {
+                    state.gamepad_button_up_event(id, but, ev);
+                }
+                (id, Event::AxisChanged(axis, val, ev)) => {
+                    state.gamepad_axis_change_event(id, axis, val, ev);
+                }
+                (id, Event::Disconnected) => {
+                    state.gamepad_disconnected_event(id);
+                }
+                (id, Event::Connected) => {
+                    state.gamepad_connected_event(id);
+                }
+                _ => (),
+            }
         }
         ctx.mouse_position = new_mouse_position;
-        
+
 
         let dt = timer::get_delta(ctx);
         let _ = state.update(ctx, dt);
